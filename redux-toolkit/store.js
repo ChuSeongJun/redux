@@ -1,36 +1,20 @@
-const { createStore, compose, applyMiddleware } = require("redux");
-const { composeWithDevTools } = require("redux-devtools-extension");
+const { configureStore } = require("@reduxjs/toolkit");
 
 const reducer = require("./reducers");
-const { addPost } = require("./actions/post");
-const { logIn, logOut } = require("./actions/user");
-
-const initialState = {
-  user: {
-    isLoggingIn: false,
-    data: null,
-  },
-  posts: [],
-};
 
 const firstMiddleware = (store) => (next) => (action) => {
   console.log("로깅", action);
   next(action);
 };
 
-const thunkMiddleware = (store) => (next) => (action) => {
-  if (typeof action === "function") {
-    // 비동기
-    return action(store.dispatch, store.getState);
-  }
-  return next(action); // 동기
-};
-
-const enhancer =
-  process.env.NODE_ENV === "production"
-    ? compose(applyMiddleware(firstMiddleware, thunkMiddleware)) //개발 환경이 아닐떄
-    : composeWithDevTools(applyMiddleware(firstMiddleware, thunkMiddleware)); //개발환경일때
-
-const store = createStore(reducer, initialState, enhancer);
+const store = configureStore({
+  reducer,
+  // 커스텀 미들웨어를 넣고 기존 미들웨어도 넣으려면 concat() 안에 적으면 된다.
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(firstMiddleware),
+  devTools: process.env.NODE_ENV !== "production",
+  // 이건 initialState인데 ssr에서만 사용한다.
+  // preloadedState
+});
 
 module.exports = store;
